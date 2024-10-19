@@ -17,7 +17,7 @@ func NewCache() *Cache {
 	}
 }
 
-// Set adds a key-value pair to the cache.
+// Set adds or stores a key-value pair to the cache.
 func (c *Cache) Set(key string, value interface{}) {
 	c.mu.Lock()         // Lock the mutex to ensure access to the map.
 	defer c.mu.Unlock() // ensure the mutex is unlocked after the func returns
