@@ -91,8 +91,8 @@ func main() {
 	cache.Delete("age")
 
 	//checking if the key exists
-	if _, exists := cache.Get("name"); !exists {
-		fmt.Println("Key 'name' no longer exists")
+	if _, exists := cache.Get("age"); !exists {
+		fmt.Println("Key 'age' no longer exists")
 	}
 
 }
