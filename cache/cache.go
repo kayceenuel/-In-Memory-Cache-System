@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -72,27 +71,4 @@ func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.data, key) // delete key-value pair from map
-}
-
-func main() {
-	cache := NewCache()
-
-	//storing data in the cache with a ttl of 1 hour
-	cache.Set("name", "John Doe", 1*time.Hour)
-	cache.Set("age", 30, 1*time.Hour)
-	cache.Set("city", "New York", 1*time.Hour)
-
-	//Getting data from the cache
-	if value, exists := cache.Get("name"); exists {
-		fmt.Println("Name:", value)
-	}
-
-	//Deleting data from the cache
-	cache.Delete("age")
-
-	//checking if the key exists
-	if _, exists := cache.Get("age"); !exists {
-		fmt.Println("Key 'age' no longer exists")
-	}
-
 }
