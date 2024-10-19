@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -28,8 +29,8 @@ func (c *Cache) Set(key string, value interface{}) {
 func (c *Cache) Get(key string) (interface{}, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	value, ok := c.data[key] // retrieve value by key
-	return value, ok         // return value and boolean indicating if the key exists
+	value, exists := c.data[key] // retrieve value by key
+	return value, exists         // return value and boolean indicating if the key exists
 }
 
 // Delete removes a key-value pair from the cache.
@@ -37,4 +38,20 @@ func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.data, key) // delete key-value pair from map
+}
+
+func main() {
+	cache := NewCache()
+
+	//storing data in the cache
+	cache.Set("name", "John Doe")
+	cache.Set("age", 30)
+	cache.Set("city", "New York")
+
+	//Getting data from the cache
+	if value, exists := cache.Get("name"); exists {
+		fmt.Println("Name:", value)
+	}
+
+	//Deleting data from the cache
 }
