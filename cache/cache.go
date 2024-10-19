@@ -3,7 +3,14 @@ package cache
 import (
 	"fmt"
 	"sync"
+	"time"
 )
+
+// CacheItem struct to store the value and expiry time of a cache item
+type CacheItem struct {
+	value  interface{}
+	expiry time.Time // expiry time of the cache item
+}
 
 // Cache is a simple in-memory key-value store. using a map and a mutex for concurrency.
 type Cache struct {
@@ -19,10 +26,14 @@ func NewCache() *Cache {
 }
 
 // Set adds or stores a key-value pair to the cache.
-func (c *Cache) Set(key string, value interface{}) {
-	c.mu.Lock()         // Lock the mutex to ensure access to the map.
-	defer c.mu.Unlock() // ensure the mutex is unlocked after the func returns
-	c.data[key] = value // store value by key
+func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	c.data[key] = CacheItem{ // store the cache item in the map
+		value:  value,               // value of the cache item
+		expiry: time.Now().Add(ttl), //expiry time of the cache item
+	}
 }
 
 // Get retrieves a value from the cache by key.
@@ -43,10 +54,10 @@ func (c *Cache) Delete(key string) {
 func main() {
 	cache := NewCache()
 
-	//storing data in the cache
-	cache.Set("name", "John Doe")
-	cache.Set("age", 30)
-	cache.Set("city", "New York")
+	//storing data in the cache with a ttl of 1 hour
+	cache.Set("name", "John Doe", 1*time.Hour)
+	cache.Set("age", 30, 1*time.Hour)
+	cache.Set("city", "New York", 1*time.Hour)
 
 	//Getting data from the cache
 	if value, exists := cache.Get("name"); exists {
@@ -60,4 +71,5 @@ func main() {
 	if _, exists := cache.Get("name"); !exists {
 		fmt.Println("Key 'name' no longer exists")
 	}
+
 }
