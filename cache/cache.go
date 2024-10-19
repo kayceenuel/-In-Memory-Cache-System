@@ -13,14 +13,14 @@ type CacheItem struct {
 
 // Cache is a simple in-memory key-value store. using a map and a mutex for concurrency.
 type Cache struct {
-	data map[string]interface{} // map stores key-value pairs
-	mu   sync.RWMutex           // mutex for concurrency control
+	data map[string]CacheItem // map stores key-value pairs as CacheItems
+	mu   sync.RWMutex         // mutex for concurrency control
 }
 
 // NewCache creates a new cache instance.
 func NewCache() *Cache {
 	return &Cache{
-		data: make(map[string]interface{}),
+		data: make(map[string]CacheItem),
 	}
 }
 
@@ -29,46 +29,35 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	c.data[key] = CacheItem{ // store the cache item in the map
-		value:  value,               // value of the cache item
-		expiry: time.Now().Add(ttl), //expiry time of the cache item
+	c.data[key] = CacheItem{
+		value:  value,
+		expiry: time.Now().Add(ttl),
 	}
 }
 
 // Get retrieves a value from the cache by key.
 func (c *Cache) Get(key string) (interface{}, bool) {
-	c.mu.RLock()         // read lock
-	defer c.mu.RUnlock() // read unlock
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	item, exists := c.data[key] // retrieve item by key
+	item, exists := c.data[key]
 	if !exists {
 		return nil, false
 	}
 
-	cacheItem, ok := item.(CacheItem)
-	if !ok {
-		// If the item is not of type CacheItem, something went wron
-		// We'll delete it and return as if it doesn't exist
+	if time.Now().After(item.expiry) {
+		// Item has expired, delete it and return as if it doesn't exist
 		c.mu.RUnlock()
 		c.Delete(key)
-		c.mu.RLock()
 		return nil, false
 	}
 
-	if time.Now().After(cacheItem.expiry) { // check if the item has expired
-		// Item has expired
-		c.mu.RUnlock()
-		c.Delete(key)
-		c.mu.RLock()
-		return nil, false
-	}
-
-	return cacheItem.value, true
+	return item.value, true
 }
 
 // Delete removes a key-value pair from the cache.
 func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	delete(c.data, key) // delete key-value pair from map
+	delete(c.data, key)
 }
