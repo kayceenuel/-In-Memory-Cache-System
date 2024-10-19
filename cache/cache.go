@@ -38,10 +38,33 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 
 // Get retrieves a value from the cache by key.
 func (c *Cache) Get(key string) (interface{}, bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	value, exists := c.data[key] // retrieve value by key
-	return value, exists         // return value and boolean indicating if the key exists
+	c.mu.RLock()         // read lock
+	defer c.mu.RUnlock() // read unlock
+
+	item, exists := c.data[key] // retrieve item by key
+	if !exists {
+		return nil, false
+	}
+
+	cacheItem, ok := item.(CacheItem)
+	if !ok {
+		// If the item is not of type CacheItem, something went wron
+		// We'll delete it and return as if it doesn't exist
+		c.mu.RUnlock()
+		c.Delete(key)
+		c.mu.RLock()
+		return nil, false
+	}
+
+	if time.Now().After(cacheItem.expiry) { // check if the item has expired
+		// Item has expired
+		c.mu.RUnlock()
+		c.Delete(key)
+		c.mu.RLock()
+		return nil, false
+	}
+
+	return cacheItem.value, true
 }
 
 // Delete removes a key-value pair from the cache.
