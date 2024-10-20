@@ -11,7 +11,7 @@ type CacheItem struct {
 	expiry time.Time // expiry time of the cache item
 }
 
-// Cache is a simple in-memory key-value store. using a map and a mutex for concurrency.
+// Cache is a simple in-memory key-value store, using a map and a mutex for concurrency.
 type Cache struct {
 	data map[string]CacheItem // map stores key-value pairs as CacheItems
 	mu   sync.RWMutex         // mutex for concurrency control
@@ -24,11 +24,12 @@ func NewCache() *Cache {
 	}
 }
 
-// Set adds or stores a key-value pair to the cache.
+// Set adds or stores a key-value pair in the cache, along with a time-to-live (TTL).
 func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Store the CacheItem with value and expiration time
 	c.data[key] = CacheItem{
 		value:  value,
 		expiry: time.Now().Add(ttl),
@@ -36,6 +37,7 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 }
 
 // Get retrieves a value from the cache by key.
+// If the item has expired, it will return false.
 func (c *Cache) Get(key string) (interface{}, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -46,9 +48,8 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	}
 
 	if time.Now().After(item.expiry) {
-		// Item has expired, delete it and return as if it doesn't exist
-		c.mu.RUnlock()
-		c.Delete(key)
+		// The item has expired, so it needs to be deleted
+		go c.Delete(key) // Clean up in the background
 		return nil, false
 	}
 
