@@ -20,18 +20,22 @@ func TestCache(t *testing.T) {
 		}
 	})
 
+	// Test expiration.
 	t.Run("Expiration", func(t *testing.T) {
 		cache := NewCache()
 		cache.Set("key2", "value2", 100*time.Millisecond)
 
-		time.Sleep(200 * time.Millisecond)
+		// Wait for the key to expire
+		time.Sleep(150 * time.Millisecond)
 
+		// Now attempt to retrieve the key after the TTL
 		_, exists := cache.Get("key2")
 		if exists {
 			t.Errorf("Expected key 'key2' to be expired")
 		}
 	})
 
+	// Test overwrite.
 	t.Run("Overwrite", func(t *testing.T) {
 		cache := NewCache()
 		cache.Set("key3", "value3", 1*time.Second)
@@ -46,6 +50,7 @@ func TestCache(t *testing.T) {
 		}
 	})
 
+	// Test delete.
 	t.Run("Delete", func(t *testing.T) {
 		cache := NewCache()
 		cache.Set("key4", "value4", 1*time.Second)
@@ -57,6 +62,7 @@ func TestCache(t *testing.T) {
 		}
 	})
 
+	// Test non-existent key.
 	t.Run("Non-existent Key", func(t *testing.T) {
 		cache := NewCache()
 		_, exists := cache.Get("non_existent")
@@ -65,6 +71,7 @@ func TestCache(t *testing.T) {
 		}
 	})
 
+	// Test multiple keys
 	t.Run("Multiple Keys", func(t *testing.T) {
 		cache := NewCache()
 		cache.Set("key5", "value5", 1*time.Second)
