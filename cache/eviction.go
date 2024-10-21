@@ -18,6 +18,11 @@ type LRUCache struct {
 	mu    sync.Mutex
 }
 
+//LRUEntry holds key for easy tracking in the list.
+type LRUEntry struct {
+	key string
+}
+
 // NewLRUCache creates a new LRUCache
 func NewLRUCache() *LRUCache {
 	return &LRUCache{
