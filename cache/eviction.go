@@ -18,7 +18,7 @@ type LRUCache struct {
 	mu    sync.Mutex
 }
 
-//LRUEntry holds key for easy tracking in the list.
+// LRUEntry holds key for easy tracking in the list.
 type LRUEntry struct {
 	key string
 }
@@ -28,5 +28,18 @@ func NewLRUCache() *LRUCache {
 	return &LRUCache{
 		Queue: list.New(),
 		items: make(map[string]*list.Element),
+	}
+}
+
+// RecordsAccess records the access of the keys in the queue and moves the key to the front of the queue...
+func (lru *LRUCache) RecordAceess(key string) {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
+	if element, ok := lru.items[key]; ok {
+		lru.Queue.MoveToFront(element)
+	} else {
+		element := lru.Queue.PushFront(LRUEntry{key: key})
+		lru.items[key] = element
 	}
 }
