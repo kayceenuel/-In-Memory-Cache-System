@@ -114,4 +114,17 @@ func TestLRU(t *testing.T) {
 
 	cache.Set("key3", "value3", 1*time.Hour)
 	evictionPolicy.RecordAceess("key3")
+
+	// Exceed cache size
+	evictedKey := evictionPolicy.RemoveEviction()
+
+	// Check if the least recently used key is evicted
+	if evictedKey != "key1" {
+		t.Errorf("Expected key 'key1' (least recently used) to be evicted")
+	}
+
+	// Check if "key1" no longer exists in cache
+	if _, exists := cache.Get("key1"); exists {
+		t.Errorf("Expected key 'key1' to be evicted from cache")
+	}
 }
