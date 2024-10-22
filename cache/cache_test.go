@@ -98,3 +98,20 @@ func TestCache(t *testing.T) {
 		}
 	})
 }
+
+// TestLRU: test the LRU eviction policy
+func TestLRU(t *testing.T) {
+	cache := NewCache()             // Create a new cache
+	evictionPolicy := NewLRUCache() // Create a New LRU Cache
+
+	// Add items to cache and simulate access
+	cache.Set("key1", "value1", 1*time.Hour)
+	evictionPolicy.RecordAceess("key1")
+
+	// Add another item
+	cache.Set("key2", "value2", 1*time.Hour)
+	evictionPolicy.RecordAceess("key2")
+
+	cache.Set("key3", "value3", 1*time.Hour)
+	evictionPolicy.RecordAceess("key3")
+}
