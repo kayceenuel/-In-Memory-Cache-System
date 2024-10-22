@@ -97,34 +97,34 @@ func TestCache(t *testing.T) {
 			}
 		}
 	})
-}
 
-// TestLRU: test the LRU eviction policy
-func TestLRU(t *testing.T) {
-	cache := NewCache()             // Create a new cache
-	evictionPolicy := NewLRUCache() // Create a New LRU Cache
+	// Test LRU
+	t.Run("LRU", func(t *testing.T) {
+		cache := NewCache()
 
-	// Add items to cache and simulate access
-	cache.Set("key1", "value1", 1*time.Hour)
-	evictionPolicy.RecordAceess("key1")
+		// Add items to cache and simulate access
+		cache.Set("key1", "value1", 1*time.Hour)
+		cache.Set("key2", "value2", 1*time.Hour)
+		cache.Set("key3", "value3", 1*time.Hour)
 
-	// Add another item
-	cache.Set("key2", "value2", 1*time.Hour)
-	evictionPolicy.RecordAceess("key2")
+		// Simulate accessing the keys in a specific order
+		cache.Get("key2")
+		cache.Get("key3")
+		cache.Get("key1")
 
-	cache.Set("key3", "value3", 1*time.Hour)
-	evictionPolicy.RecordAceess("key3")
+		// Exceed cache size (assuming the cache has a limit of 2 items)
+		cache.Set("key4", "value4", 1*time.Hour)
 
-	// Exceed cache size
-	evictedKey := evictionPolicy.RemoveEviction()
+		// Check if the least recently used key is evicted
+		if _, exists := cache.Get("key2"); exists {
+			t.Errorf("Expected key 'key2' (least recently used) to be evicted")
+		}
 
-	// Check if the least recently used key is evicted
-	if evictedKey != "key1" {
-		t.Errorf("Expected key 'key1' (least recently used) to be evicted")
-	}
-
-	// Check if "key1" no longer exists in cache
-	if _, exists := cache.Get("key1"); exists {
-		t.Errorf("Expected key 'key1' to be evicted from cache")
-	}
+		// Check if other keys still exist
+		for _, key := range []string{"key1", "key3", "key4"} {
+			if _, exists := cache.Get(key); !exists {
+				t.Errorf("Expected key '%s' to still exist in cache", key)
+			}
+		}
+	})
 }
