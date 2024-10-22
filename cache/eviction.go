@@ -43,3 +43,19 @@ func (lru *LRUCache) RecordAceess(key string) {
 		lru.items[key] = element
 	}
 }
+
+// RemoveEviction removes the key from the queue and returns the key to evict
+func (lru *LRUCache) RemoveEviction() string {
+	lru.mu.Lock()
+	defer lru.mu.Unlock()
+
+	// remove the oldest entry from the queue
+	element := lru.Queue.Back()
+	if element != nil {
+		lruEntry := element.Value.(LRUEntry)
+		lru.Queue.Remove(element)
+		delete(lru.items, lruEntry.key)
+		return lruEntry.key
+	}
+	return ""
+}
