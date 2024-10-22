@@ -99,32 +99,30 @@ func TestCache(t *testing.T) {
 	})
 
 	// Test LRU
-	t.Run("LRU", func(t *testing.T) {
-		cache := NewCache()
+	t.Run("LRU Eviction", func(t *testing.T) {
+		cache := NewCache() // Default maxSize is 2 for simplicity
 
 		// Add items to cache and simulate access
 		cache.Set("key1", "value1", 1*time.Hour)
 		cache.Set("key2", "value2", 1*time.Hour)
-		cache.Set("key3", "value3", 1*time.Hour)
+		cache.Set("key3", "value3", 1*time.Hour) // This should trigger eviction
 
-		// Simulate accessing the keys in a specific order
-		cache.Get("key2")
-		cache.Get("key3")
-		cache.Get("key1")
-
-		// Exceed cache size (assuming the cache has a limit of 2 items)
-		cache.Set("key4", "value4", 1*time.Hour)
-
-		// Check if the least recently used key is evicted
-		if _, exists := cache.Get("key2"); exists {
-			t.Errorf("Expected key 'key2' (least recently used) to be evicted")
+		// Check if the least recently used key "key1" is evicted
+		if _, exists := cache.Get("key1"); exists {
+			t.Errorf("Expected key 'key1' to be evicted")
 		}
 
 		// Check if other keys still exist
-		for _, key := range []string{"key1", "key3", "key4"} {
+		for _, key := range []string{"key2", "key3"} {
 			if _, exists := cache.Get(key); !exists {
 				t.Errorf("Expected key '%s' to still exist in cache", key)
 			}
+		}
+
+		// Add another key to exceed the cache size and evict another key
+		cache.Set("key4", "value4", 1*time.Hour)
+		if _, exists := cache.Get("key2"); exists {
+			t.Errorf("Expected key 'key2' to be evicted")
 		}
 	})
 }
