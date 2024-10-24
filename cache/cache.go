@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// CacheItem struct to store the value and expiry time of a cache item
+// CacheItem stores the value and expiry time of a cache item
 type CacheItem struct {
 	value  interface{}
 	expiry time.Time
@@ -27,11 +27,11 @@ type Entry struct {
 }
 
 // NewCache creates a new cache instance with a given max size.
-func NewCache() *Cache {
+func NewCache(maxSize int) *Cache {
 	return &Cache{
 		data:     make(map[string]*list.Element),
 		eviction: list.New(),
-		maxSize:  2, // Set a default max size of 2 for simplicity
+		maxSize:  maxSize,
 	}
 }
 
@@ -40,21 +40,26 @@ func (c *Cache) Set(key string, value interface{}, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	// If the key already exists, move it to the front
+	// If the key already exists and hasn't expired, update it
 	if element, exists := c.data[key]; exists {
-		c.eviction.MoveToFront(element)
-		item := element.Value.(*Entry)
-		item.value = CacheItem{value: value, expiry: time.Now().Add(ttl)}
-		return
+		entry := element.Value.(*Entry)
+		if time.Now().After(entry.value.expiry) {
+			c.eviction.Remove(element)
+			delete(c.data, key)
+		} else {
+			c.eviction.MoveToFront(element)
+			entry.value = CacheItem{value: value, expiry: time.Now().Add(ttl)}
+			return
+		}
 	}
 
-	// Add a new entry to the cache and eviction list
+	// Add new item to cache
 	item := CacheItem{value: value, expiry: time.Now().Add(ttl)}
 	entry := &Entry{key: key, value: item}
 	element := c.eviction.PushFront(entry)
 	c.data[key] = element
 
-	// Check if the cache exceeds its maximum size, and evict the least recently used item
+	// Evict least recently used if cache exceeds size
 	if c.eviction.Len() > c.maxSize {
 		c.evict()
 	}
@@ -72,12 +77,14 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 
 	entry := element.Value.(*Entry)
 	if time.Now().After(entry.value.expiry) {
-		// If the item has expired, remove it
-		go c.Delete(key)
+		// If the item has expired, remove it immediately
+		c.mu.RUnlock()
+		c.Delete(key)
+		c.mu.RLock()
 		return nil, false
 	}
 
-	// Move the accessed item to the front of the eviction list
+	// Move to front (recently used)
 	c.eviction.MoveToFront(element)
 	return entry.value.value, true
 }
@@ -98,11 +105,22 @@ func (c *Cache) Delete(key string) {
 
 // evict removes the least recently used (LRU) item from the cache.
 func (c *Cache) evict() {
-	// The least recently used item is at the back of the list
-	element := c.eviction.Back()
-	if element != nil {
+	for {
+		element := c.eviction.Back()
+		if element == nil {
+			break
+		}
+
 		entry := element.Value.(*Entry)
+		if time.Now().After(entry.value.expiry) {
+			c.eviction.Remove(element)
+			delete(c.data, entry.key)
+			continue
+		}
+
+		// Remove LRU item
 		c.eviction.Remove(element)
 		delete(c.data, entry.key)
+		break
 	}
 }
